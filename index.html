@@ -1,312 +1,621 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Newfoundland Travel Companion</title>
-<style>
-body{font-family:Arial,sans-serif;background:#eef7fb;margin:0;color:#17313b}
-header{background:#007c89;color:#fff;padding:20px;text-align:center}
-nav{display:flex;gap:8px;padding:10px;background:#d9f0f5;overflow:auto}
-nav button{padding:10px 16px;border:none;border-radius:20px;cursor:pointer}
-nav button.active{background:#007c89;color:#fff}
-section{display:none;padding:20px;max-width:900px;margin:auto}
-section.active{display:block}
-.card{background:#fff;padding:16px;border-radius:12px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-input,textarea{width:100%;padding:10px;margin:6px 0;box-sizing:border-box}
-button.primary{background:#007c89;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer}
-.message{background:#eef7fb;padding:10px;border-radius:10px;margin:8px 0}
-img{max-width:100%;border-radius:10px}
-  section {
-  display: none;
-}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-section.active {
-  display: block;
-}
-</style>
+  <title>Newfoundland Travel Companion</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #eef7fb;
+      color: #17313b;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .top-alert-bar {
+      background: #002f3a;
+      color: white;
+      padding: 8px 12px;
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .top-auth-bar {
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+      background: #014f5c;
+      color: white;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .auth-brand {
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .auth-controls {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .auth-controls input {
+      padding: 8px;
+      border: none;
+      border-radius: 8px;
+    }
+
+    .auth-controls button,
+    button.primary {
+      background: #007c89;
+      color: white;
+      border: none;
+      padding: 9px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    header {
+      background: linear-gradient(135deg, #007c89, #014f5c);
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
+    }
+
+    nav {
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      background: #d9f0f5;
+      overflow-x: auto;
+    }
+
+    nav button {
+      padding: 11px 16px;
+      border: none;
+      border-radius: 20px;
+      background: white;
+      cursor: pointer;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    nav button.active {
+      background: #007c89;
+      color: white;
+    }
+
+    section {
+      display: none;
+      padding: 20px;
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    section.active {
+      display: block;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 18px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 11px;
+      margin: 7px 0;
+      border-radius: 10px;
+      border: 1px solid #bbb;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+
+    textarea {
+      min-height: 90px;
+    }
+
+    .feed-post img,
+    .message img {
+      width: 100%;
+      max-height: 420px;
+      object-fit: cover;
+      border-radius: 12px;
+      margin-top: 10px;
+    }
+
+    .message {
+      background: #eef7fb;
+      padding: 12px;
+      border-radius: 12px;
+      margin: 10px 0;
+    }
+
+    .ad-slot {
+      border: 2px dashed #91b9c2;
+      background: #f7fcfd;
+      padding: 18px;
+      text-align: center;
+      border-radius: 14px;
+      color: #456;
+      margin-bottom: 18px;
+    }
+
+    .locked-card {
+      background: #fff8e6;
+      border: 1px solid #f0cf75;
+      padding: 18px;
+      border-radius: 14px;
+      text-align: center;
+    }
+
+    @media (max-width: 700px) {
+      .top-auth-bar {
+        grid-template-columns: 1fr;
+      }
+
+      .auth-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .auth-controls input,
+      .auth-controls button {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<header><h1>Newfoundland Travel Companion</h1><p>Chat • Questions • Photos • Itinerary</p></header>
-<nav>
-  <button type="button" class="tab active" data-target="home">Home</button>
-  <button type="button" class="tab" data-target="chat">Messenger</button>
-  <button type="button" class="tab" data-target="photos">Photos</button>
-  <button type="button" class="tab" data-target="trip">Itinerary</button>
-</nav>
-<section id="home" class="active">
-<div class="card">
-<h2>Welcome!</h2>
-<p>Plan your Newfoundland adventure, chat with travelers, post photos and build an itinerary.</p>
-</div>
-</section>
 
-<section id="chat">
-<input id="email" type="email" placeholder="Email">
-<input id="password" type="password" placeholder="Password">
+  <div class="top-alert-bar">
+    <span>🔔 Notifications</span>
+    <span>💬 Messages</span>
+    <span>📅 Itinerary Reminders</span>
+    <span>🐋 Whale Alerts</span>
+    <span>🧊 Icebergs</span>
+    <span>🐧 Puffins</span>
+    <span>🫎 Moose Alerts</span>
+  </div>
 
-<button onclick="signUp()">Create Account</button>
-<button onclick="login()">Login</button>
-<button onclick="logout()">Logout</button>
+  <div class="top-auth-bar">
+    <div class="auth-brand">Newfoundland Travel Companion</div>
 
-<textarea id="msg" placeholder="Write a message"></textarea>
-<input id="messagePhoto" type="file" accept="image/*">
-<button onclick="addMsg()">Send Message</button>
-
-<div id="msgs"></div>
-</section>
-
-<section id="photos">
-<div class="card">
-<input id="caption" placeholder="Caption">
-<input type="file" id="photo">
-<button class="primary" onclick="addPhoto()">Upload</button>
-</div>
-<div class="card" id="gallery"></div>
-</section>
-
-<section id="trip">
-<div class="card">
-<input id="day" placeholder="Day">
-<input id="place" placeholder="Place">
-<textarea id="plan" placeholder="Plan"></textarea>
-<button class="primary" onclick="addTrip()">Add</button>
-</div>
-<div class="card" id="triplist"></div>
-</section>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-const SUPABASE_URL = "https://ttqvjplanjvufolvdrxs.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_f-ngZYW_a6dRwCE4Gtrx0Q_j2yHOU0V";
-
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-let photos = JSON.parse(localStorage.getItem("photos") || "[]");
-let trips = JSON.parse(localStorage.getItem("trips") || "[]");
-let currentConversationId = null;
-
-function showTab(tabId) {
-  document.querySelectorAll("section").forEach(section => {
-    section.classList.remove("active");
-  });
-
-  document.querySelectorAll(".tab").forEach(button => {
-    button.classList.remove("active");
-  });
-
-  document.getElementById(tabId).classList.add("active");
-  document.querySelector(`[data-tab="${tabId}"]`).classList.add("active");
-}
-
-document.querySelectorAll(".tab").forEach(button => {
-  button.addEventListener("click", () => {
-    showTab(button.dataset.tab);
-  });
-});
-
-async function signUp() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  const { error } = await supabase.auth.signUp({ email, password });
-  alert(error ? error.message : "Account created. Now login.");
-}
-
-async function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return alert(error.message);
-
-  alert("Logged in!");
-  await setupChat();
-  await loadMessages();
-}
-
-async function logout() {
-  await supabase.auth.signOut();
-  alert("Logged out");
-}
-
-async function setupChat() {
-  const { data: userData } = await supabase.auth.getUser();
-  const user = userData.user;
-  if (!user) return;
-
-  let { data: conversations } = await supabase
-    .from("conversations")
-    .select("*")
-    .eq("title", "Public Newfoundland Chat")
-    .limit(1);
-
-  if (!conversations || conversations.length === 0) {
-    const { data: newConversation, error } = await supabase
-      .from("conversations")
-      .insert({
-        title: "Public Newfoundland Chat",
-        created_by: user.id
-      })
-      .select()
-      .single();
-
-    if (error) return alert(error.message);
-
-    currentConversationId = newConversation.id;
-  } else {
-    currentConversationId = conversations[0].id;
-  }
-
-  await supabase
-    .from("conversation_members")
-    .upsert({
-      conversation_id: currentConversationId,
-      user_id: user.id
-    });
-}
-
-async function addMsg() {
-  const { data: userData } = await supabase.auth.getUser();
-  const user = userData.user;
-
-  if (!user) return alert("Please login first.");
-
-  if (!currentConversationId) {
-    await setupChat();
-  }
-
-  const messageText = document.getElementById("msg").value;
-  const fileInput = document.getElementById("messagePhoto");
-  const file = fileInput ? fileInput.files[0] : null;
-
-  let photoUrl = null;
-
-  if (file) {
-    const fileName = `${user.id}/${Date.now()}-${file.name}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("message-photos")
-      .upload(fileName, file);
-
-    if (uploadError) return alert(uploadError.message);
-
-    const { data } = supabase.storage
-      .from("message-photos")
-      .getPublicUrl(fileName);
-
-    photoUrl = data.publicUrl;
-  }
-
-  const { error } = await supabase.from("messages").insert({
-    conversation_id: currentConversationId,
-    sender_id: user.id,
-    message: messageText,
-    photo_url: photoUrl
-  });
-
-  if (error) return alert(error.message);
-
-  document.getElementById("msg").value = "";
-  if (fileInput) fileInput.value = "";
-
-  await loadMessages();
-}
-
-async function loadMessages() {
-  if (!currentConversationId) return;
-
-  const { data, error } = await supabase
-    .from("messages")
-    .select("*")
-    .eq("conversation_id", currentConversationId)
-    .order("created_at", { ascending: false });
-
-  if (error) return alert(error.message);
-
-  document.getElementById("msgs").innerHTML = data.map(x => `
-    <div class="message">
-      <p>${x.message || ""}</p>
-      ${x.photo_url ? `<img src="${x.photo_url}" style="max-width:100%;border-radius:12px;">` : ""}
-      <small>${new Date(x.created_at).toLocaleString()}</small>
+    <div class="auth-controls" id="loggedOutControls">
+      <input id="email" type="email" placeholder="Email">
+      <input id="password" type="password" placeholder="Password">
+      <button onclick="signUp()">Create</button>
+      <button onclick="login()">Login</button>
     </div>
-  `).join("");
-}
 
-function addPhoto() {
-  let f = photo.files[0];
-  if (!f) return;
+    <div class="auth-controls hidden" id="loggedInControls">
+      <span id="userEmail"></span>
+      <button onclick="logout()">Logout</button>
+    </div>
 
-  let r = new FileReader();
-  r.onload = e => {
-    photos.unshift({ c: caption.value, i: e.target.result });
-    localStorage.setItem("photos", JSON.stringify(photos));
-    renderLocal();
-    caption.value = "";
-    photo.value = "";
-  };
-  r.readAsDataURL(f);
-}
+    <div id="authStatus">Not logged in</div>
+  </div>
 
-function addTrip() {
-  trips.push({ d: day.value, p: place.value, t: plan.value });
-  localStorage.setItem("trips", JSON.stringify(trips));
-  renderLocal();
-  day.value = "";
-  place.value = "";
-  plan.value = "";
-}
+  <header>
+    <h1>Newfoundland Travel Companion</h1>
+    <p>Plan your trip, share photos, message travelers, and discover what’s happening across the island.</p>
+  </header>
 
-function renderLocal() {
-  document.getElementById("gallery").innerHTML = photos.map(x =>
-    `<div><p>${x.c}</p><img src="${x.i}"></div><hr>`
-  ).join("");
+  <nav>
+    <button type="button" class="tab active" data-target="home">Home</button>
+    <button type="button" class="tab" data-target="feed">Feed</button>
+    <button type="button" class="tab auth-only hidden" data-target="chat">Messages</button>
+    <button type="button" class="tab auth-only hidden" data-target="photos">Photo Gallery</button>
+    <button type="button" class="tab auth-only hidden" data-target="trip">Itinerary</button>
+  </nav>
 
-  document.getElementById("triplist").innerHTML = trips.map(x =>
-    `<div><b>${x.d} - ${x.p}</b><p>${x.t}</p></div><hr>`
-  ).join("");
-}
+  <section id="home" class="active">
+    <div class="ad-slot">Premium Advertiser Banner Space</div>
 
-supabase
-  .channel("live-public-chat")
-  .on(
-    "postgres_changes",
-    { event: "*", schema: "public", table: "messages" },
-    loadMessages
-  )
-  .subscribe();
+    <div class="card">
+      <h2>Welcome to Newfoundland</h2>
+      <p>Visitors can preview the feed. Create an account to message travelers, post photos, and build itineraries.</p>
+    </div>
 
-renderLocal();
-setupChat().then(loadMessages);
-</script>
+    <div class="card">
+      <h3>Featured Ideas</h3>
+      <p>🐋 Whale watching, 🧊 iceberg viewing, 🐧 puffin colonies, 🥾 hiking trails, 🚗 scenic road trips.</p>
+    </div>
+  </section>
+
+  <section id="feed">
+    <div class="ad-slot">Google Ad / Local Sponsor Space</div>
+
+    <div class="card">
+      <h2>Travel Feed</h2>
+      <p id="feedNotice"></p>
+      <div id="feedPosts"></div>
+    </div>
+  </section>
+
+  <section id="chat">
+    <div class="card">
+      <h2>Messages</h2>
+      <textarea id="msg" placeholder="Write a message..."></textarea>
+      <input id="messagePhoto" type="file" accept="image/*">
+      <button class="primary" onclick="addMsg()">Send Message</button>
+    </div>
+
+    <div class="card">
+      <h3>Public Newfoundland Chat</h3>
+      <div id="msgs"></div>
+    </div>
+  </section>
+
+  <section id="photos">
+    <div class="card">
+      <h2>Photo Gallery</h2>
+      <input id="photoCaption" placeholder="Caption">
+      <input id="photoLocation" placeholder="Location">
+      <input id="photoUpload" type="file" accept="image/*">
+      <button class="primary" onclick="addPhotoPost()">Post Photo</button>
+    </div>
+
+    <div id="photoGallery"></div>
+  </section>
+
+  <section id="trip">
+    <div class="card">
+      <h2>Create Itinerary</h2>
+      <input id="tripTitle" placeholder="Trip title">
+      <input id="tripDay" placeholder="Day, example: Day 1">
+      <input id="tripPlace" placeholder="Place">
+      <textarea id="tripPlan" placeholder="Plan"></textarea>
+      <button class="primary" onclick="addItineraryItem()">Add Item</button>
+    </div>
+
+    <div class="card">
+      <h3>Your Itinerary</h3>
+      <div id="tripList"></div>
+    </div>
+  </section>
+
   <script>
-document.addEventListener("DOMContentLoaded", function () {
-  const buttons = document.querySelectorAll(".tab");
-  const sections = document.querySelectorAll("section");
+    const SUPABASE_URL = "https://ttqvjplanjvufolvdrxs.supabase.co";
+    const SUPABASE_ANON_KEY = "PASTE_YOUR_ANON_KEY_HERE";
 
-  buttons.forEach(function (button) {
-    button.addEventListener("click", function () {
-      const targetId = button.getAttribute("data-target");
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      sections.forEach(function (section) {
+    let currentUser = null;
+    let currentConversationId = null;
+    let localTrips = JSON.parse(localStorage.getItem("localTrips") || "[]");
+
+    document.addEventListener("DOMContentLoaded", async function () {
+      setupNavigation();
+      await checkAuth();
+      await loadFeedPosts();
+      await setupChat();
+      await loadMessages();
+      renderTrips();
+    });
+
+    function setupNavigation() {
+      document.querySelectorAll(".tab").forEach(button => {
+        button.addEventListener("click", function () {
+          const target = button.dataset.target;
+          const lockedSections = ["chat", "photos", "trip"];
+
+          if (lockedSections.includes(target) && !currentUser) {
+            alert("Please create an account or login to use this feature.");
+            return;
+          }
+
+          showTab(target);
+        });
+      });
+    }
+
+    function showTab(tabId) {
+      document.querySelectorAll("section").forEach(section => {
         section.classList.remove("active");
       });
 
-      buttons.forEach(function (btn) {
-        btn.classList.remove("active");
+      document.querySelectorAll(".tab").forEach(button => {
+        button.classList.remove("active");
       });
 
-      const targetSection = document.getElementById(targetId);
+      const section = document.getElementById(tabId);
+      if (section) section.classList.add("active");
 
-      if (!targetSection) {
-        alert("Missing section: " + targetId);
+      const button = document.querySelector(`[data-target="${tabId}"]`);
+      if (button) button.classList.add("active");
+    }
+
+    async function checkAuth() {
+      const { data } = await supabase.auth.getUser();
+      currentUser = data.user;
+
+      document.querySelectorAll(".auth-only").forEach(el => {
+        el.classList.toggle("hidden", !currentUser);
+      });
+
+      document.getElementById("loggedOutControls").classList.toggle("hidden", !!currentUser);
+      document.getElementById("loggedInControls").classList.toggle("hidden", !currentUser);
+
+      document.getElementById("userEmail").innerText = currentUser ? currentUser.email : "";
+      document.getElementById("authStatus").innerText = currentUser ? "Logged in" : "Not logged in";
+    }
+
+    async function signUp() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (!email || !password) return alert("Enter email and password.");
+
+      const { error } = await supabase.auth.signUp({ email, password });
+
+      if (error) return alert(error.message);
+
+      alert("Account created. Check your email if confirmation is turned on.");
+      await checkAuth();
+    }
+
+    async function login() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (!email || !password) return alert("Enter email and password.");
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) return alert(error.message);
+
+      await checkAuth();
+      await setupChat();
+      await loadMessages();
+      await loadFeedPosts();
+      showTab("feed");
+    }
+
+    async function logout() {
+      await supabase.auth.signOut();
+      currentUser = null;
+      currentConversationId = null;
+      await checkAuth();
+      await loadFeedPosts();
+      showTab("home");
+    }
+
+    async function loadFeedPosts() {
+      let query = supabase
+        .from("photo_posts")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!currentUser) {
+        query = query.limit(3);
+        document.getElementById("feedNotice").innerText =
+          "Previewing a few posts. Login to see the full community feed.";
+      } else {
+        document.getElementById("feedNotice").innerText =
+          "Welcome back. You can see the full feed.";
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        document.getElementById("feedPosts").innerHTML =
+          "<p>No feed posts yet, or the photo_posts table is not ready.</p>";
         return;
       }
 
-      targetSection.classList.add("active");
-      button.classList.add("active");
+      document.getElementById("feedPosts").innerHTML = data.map(post => `
+        <div class="card feed-post">
+          ${post.photo_url ? `<img src="${post.photo_url}">` : ""}
+          <p>${post.caption || ""}</p>
+          <small>${post.location || ""}</small><br>
+          <small>${new Date(post.created_at).toLocaleString()}</small>
+        </div>
+      `).join("");
+    }
+
+    async function setupChat() {
+      if (!currentUser) return;
+
+      let { data: conversations } = await supabase
+        .from("conversations")
+        .select("*")
+        .eq("title", "Public Newfoundland Chat")
+        .limit(1);
+
+      if (!conversations || conversations.length === 0) {
+        const { data: newConversation, error } = await supabase
+          .from("conversations")
+          .insert({
+            title: "Public Newfoundland Chat",
+            created_by: currentUser.id
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error(error);
+          return;
+        }
+
+        currentConversationId = newConversation.id;
+      } else {
+        currentConversationId = conversations[0].id;
+      }
+
+      await supabase
+        .from("conversation_members")
+        .upsert({
+          conversation_id: currentConversationId,
+          user_id: currentUser.id
+        });
+    }
+
+    async function addMsg() {
+      if (!currentUser) return alert("Please login first.");
+
+      if (!currentConversationId) await setupChat();
+
+      const messageText = document.getElementById("msg").value.trim();
+      const file = document.getElementById("messagePhoto").files[0];
+
+      if (!messageText && !file) return alert("Write a message or choose a photo.");
+
+      let photoUrl = null;
+
+      if (file) {
+        const fileName = `${currentUser.id}/messages/${Date.now()}-${file.name}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("message-photos")
+          .upload(fileName, file);
+
+        if (uploadError) return alert(uploadError.message);
+
+        const { data } = supabase.storage
+          .from("message-photos")
+          .getPublicUrl(fileName);
+
+        photoUrl = data.publicUrl;
+      }
+
+      const { error } = await supabase.from("messages").insert({
+        conversation_id: currentConversationId,
+        sender_id: currentUser.id,
+        message: messageText,
+        photo_url: photoUrl
+      });
+
+      if (error) return alert(error.message);
+
+      document.getElementById("msg").value = "";
+      document.getElementById("messagePhoto").value = "";
+
+      await loadMessages();
+    }
+
+    async function loadMessages() {
+      if (!currentUser || !currentConversationId) return;
+
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("conversation_id", currentConversationId)
+        .order("created_at", { ascending: false });
+
+      if (error) return console.error(error);
+
+      document.getElementById("msgs").innerHTML = data.map(item => `
+        <div class="message">
+          <p>${item.message || ""}</p>
+          ${item.photo_url ? `<img src="${item.photo_url}">` : ""}
+          <small>${new Date(item.created_at).toLocaleString()}</small>
+        </div>
+      `).join("");
+    }
+
+    async function addPhotoPost() {
+      if (!currentUser) return alert("Please login first.");
+
+      const caption = document.getElementById("photoCaption").value.trim();
+      const location = document.getElementById("photoLocation").value.trim();
+      const file = document.getElementById("photoUpload").files[0];
+
+      if (!file) return alert("Choose a photo.");
+
+      const fileName = `${currentUser.id}/posts/${Date.now()}-${file.name}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("message-photos")
+        .upload(fileName, file);
+
+      if (uploadError) return alert(uploadError.message);
+
+      const { data } = supabase.storage
+        .from("message-photos")
+        .getPublicUrl(fileName);
+
+      const { error } = await supabase.from("photo_posts").insert({
+        user_id: currentUser.id,
+        caption,
+        location,
+        photo_url: data.publicUrl
+      });
+
+      if (error) return alert(error.message);
+
+      document.getElementById("photoCaption").value = "";
+      document.getElementById("photoLocation").value = "";
+      document.getElementById("photoUpload").value = "";
+
+      await loadFeedPosts();
+      showTab("feed");
+    }
+
+    function addItineraryItem() {
+      if (!currentUser) return alert("Please login first.");
+
+      localTrips.push({
+        title: document.getElementById("tripTitle").value,
+        day: document.getElementById("tripDay").value,
+        place: document.getElementById("tripPlace").value,
+        plan: document.getElementById("tripPlan").value
+      });
+
+      localStorage.setItem("localTrips", JSON.stringify(localTrips));
+
+      document.getElementById("tripTitle").value = "";
+      document.getElementById("tripDay").value = "";
+      document.getElementById("tripPlace").value = "";
+      document.getElementById("tripPlan").value = "";
+
+      renderTrips();
+    }
+
+    function renderTrips() {
+      document.getElementById("tripList").innerHTML = localTrips.map(item => `
+        <div class="message">
+          <strong>${item.title || "My Trip"}</strong>
+          <p>${item.day} - ${item.place}</p>
+          <p>${item.plan}</p>
+        </div>
+      `).join("");
+    }
+
+    supabase
+      .channel("live-messages")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "messages" },
+        loadMessages
+      )
+      .subscribe();
+
+    supabase.auth.onAuthStateChange(async () => {
+      await checkAuth();
     });
-  });
-});
-</script>
+  </script>
+
 </body>
 </html>
