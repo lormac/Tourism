@@ -17,15 +17,22 @@ input,textarea{width:100%;padding:10px;margin:6px 0;box-sizing:border-box}
 button.primary{background:#007c89;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer}
 .message{background:#eef7fb;padding:10px;border-radius:10px;margin:8px 0}
 img{max-width:100%;border-radius:10px}
+  section {
+  display: none;
+}
+
+section.active {
+  display: block;
+}
 </style>
 </head>
 <body>
 <header><h1>Newfoundland Travel Companion</h1><p>Chat • Questions • Photos • Itinerary</p></header>
 <nav>
-  <button class="tab active" data-tab="home">Home</button>
-  <button class="tab" data-tab="chat">Messenger</button>
-  <button class="tab" data-tab="photos">Photos</button>
-  <button class="tab" data-tab="trip">Itinerary</button>
+  <button type="button" class="tab active" data-target="home">Home</button>
+  <button type="button" class="tab" data-target="chat">Messenger</button>
+  <button type="button" class="tab" data-target="photos">Photos</button>
+  <button type="button" class="tab" data-target="trip">Itinerary</button>
 </nav>
 <section id="home" class="active">
 <div class="card">
@@ -270,6 +277,36 @@ supabase
 
 renderLocal();
 setupChat().then(loadMessages);
+</script>
+  <script>
+document.addEventListener("DOMContentLoaded", function () {
+  const buttons = document.querySelectorAll(".tab");
+  const sections = document.querySelectorAll("section");
+
+  buttons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      const targetId = button.getAttribute("data-target");
+
+      sections.forEach(function (section) {
+        section.classList.remove("active");
+      });
+
+      buttons.forEach(function (btn) {
+        btn.classList.remove("active");
+      });
+
+      const targetSection = document.getElementById(targetId);
+
+      if (!targetSection) {
+        alert("Missing section: " + targetId);
+        return;
+      }
+
+      targetSection.classList.add("active");
+      button.classList.add("active");
+    });
+  });
+});
 </script>
 </body>
 </html>
