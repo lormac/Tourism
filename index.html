@@ -22,10 +22,10 @@ img{max-width:100%;border-radius:10px}
 <body>
 <header><h1>Newfoundland Travel Companion</h1><p>Chat • Questions • Photos • Itinerary</p></header>
 <nav>
-<button class="tab active" onclick="showTab('home',this)">Home</button>
-<button class="tab" onclick="showTab('chat',this)">Messenger</button>
-<button class="tab" onclick="showTab('photos',this)">Photos</button>
-<button class="tab" onclick="showTab('trip',this)">Itinerary</button>
+  <button class="tab active" data-tab="home">Home</button>
+  <button class="tab" data-tab="chat">Messenger</button>
+  <button class="tab" data-tab="photos">Photos</button>
+  <button class="tab" data-tab="trip">Itinerary</button>
 </nav>
 
 <section id="home" class="active">
