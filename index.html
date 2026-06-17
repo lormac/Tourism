@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Newfoundland Travel Companion</title>
+<style>
+body{font-family:Arial,sans-serif;background:#eef7fb;margin:0;color:#17313b}
+header{background:#007c89;color:#fff;padding:20px;text-align:center}
+nav{display:flex;gap:8px;padding:10px;background:#d9f0f5;overflow:auto}
+nav button{padding:10px 16px;border:none;border-radius:20px;cursor:pointer}
+nav button.active{background:#007c89;color:#fff}
+section{display:none;padding:20px;max-width:900px;margin:auto}
+section.active{display:block}
+.card{background:#fff;padding:16px;border-radius:12px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+input,textarea{width:100%;padding:10px;margin:6px 0;box-sizing:border-box}
+button.primary{background:#007c89;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer}
+.message{background:#eef7fb;padding:10px;border-radius:10px;margin:8px 0}
+img{max-width:100%;border-radius:10px}
+</style>
+</head>
+<body>
+<header><h1>Newfoundland Travel Companion</h1><p>Chat • Questions • Photos • Itinerary</p></header>
+<nav>
+<button class="tab active" onclick="showTab('home',this)">Home</button>
+<button class="tab" onclick="showTab('chat',this)">Messenger</button>
+<button class="tab" onclick="showTab('photos',this)">Photos</button>
+<button class="tab" onclick="showTab('trip',this)">Itinerary</button>
+</nav>
+
+<section id="home" class="active">
+<div class="card">
+<h2>Welcome!</h2>
+<p>Plan your Newfoundland adventure, chat with travelers, post photos and build an itinerary.</p>
+</div>
+</section>
+
+<section id="chat">
+<div class="card">
+<input id="name" placeholder="Your name">
+<textarea id="msg" placeholder="Message"></textarea>
+<button class="primary" onclick="addMsg()">Send</button>
+</div>
+<div class="card" id="msgs"></div>
+</section>
+
+<section id="photos">
+<div class="card">
+<input id="caption" placeholder="Caption">
+<input type="file" id="photo">
+<button class="primary" onclick="addPhoto()">Upload</button>
+</div>
+<div class="card" id="gallery"></div>
+</section>
+
+<section id="trip">
+<div class="card">
+<input id="day" placeholder="Day">
+<input id="place" placeholder="Place">
+<textarea id="plan" placeholder="Plan"></textarea>
+<button class="primary" onclick="addTrip()">Add</button>
+</div>
+<div class="card" id="triplist"></div>
+</section>
+
+<script>
+let msgs=JSON.parse(localStorage.getItem("msgs")||"[]");
+let photos=JSON.parse(localStorage.getItem("photos")||"[]");
+let trips=JSON.parse(localStorage.getItem("trips")||"[]");
+
+function save(){
+localStorage.setItem("msgs",JSON.stringify(msgs));
+localStorage.setItem("photos",JSON.stringify(photos));
+localStorage.setItem("trips",JSON.stringify(trips));
+}
+function showTab(id,b){
+document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));
+document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+b.classList.add("active");
+}
+function render(){
+document.getElementById("msgs").innerHTML=msgs.map(x=>`<div class="message"><b>${x.n}</b><br>${x.m}</div>`).join("");
+document.getElementById("gallery").innerHTML=photos.map(x=>`<div><p>${x.c}</p><img src="${x.i}"></div><hr>`).join("");
+document.getElementById("triplist").innerHTML=trips.map(x=>`<div><b>${x.d} - ${x.p}</b><p>${x.t}</p></div><hr>`).join("");
+}
+function addMsg(){
+msgs.unshift({n:name.value,m:msg.value});
+save();render();msg.value="";
+}
+function addPhoto(){
+let f=photo.files[0];
+if(!f)return;
+let r=new FileReader();
+r.onload=e=>{photos.unshift({c:caption.value,i:e.target.result});save();render();caption.value="";photo.value="";}
+r.readAsDataURL(f);
+}
+function addTrip(){
+trips.push({d:day.value,p:place.value,t:plan.value});
+save();render();
+day.value="";place.value="";plan.value="";
+}
+render();
+</script>
+</body>
+</html>
