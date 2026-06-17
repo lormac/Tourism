@@ -36,12 +36,18 @@ img{max-width:100%;border-radius:10px}
 </section>
 
 <section id="chat">
-<div class="card">
-<input id="name" placeholder="Your name">
-<textarea id="msg" placeholder="Message"></textarea>
-<button class="primary" onclick="addMsg()">Send</button>
-</div>
-<div class="card" id="msgs"></div>
+<input id="email" type="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+
+<button onclick="signUp()">Create Account</button>
+<button onclick="login()">Login</button>
+<button onclick="logout()">Logout</button>
+
+<textarea id="msg" placeholder="Write a message"></textarea>
+<input id="messagePhoto" type="file" accept="image/*">
+<button onclick="addMsg()">Send Message</button>
+
+<div id="msgs"></div>
 </section>
 
 <section id="photos">
@@ -62,48 +68,197 @@ img{max-width:100%;border-radius:10px}
 </div>
 <div class="card" id="triplist"></div>
 </section>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = "https://ttqvjplanjvufolvdrxs.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_f-ngZYW_a6dRwCE4Gtrx0Q_j2yHOU0V";
-  
-let msgs=JSON.parse(localStorage.getItem("msgs")||"[]");
-let photos=JSON.parse(localStorage.getItem("photos")||"[]");
-let trips=JSON.parse(localStorage.getItem("trips")||"[]");
 
-function save(){
-localStorage.setItem("msgs",JSON.stringify(msgs));
-localStorage.setItem("photos",JSON.stringify(photos));
-localStorage.setItem("trips",JSON.stringify(trips));
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let photos = JSON.parse(localStorage.getItem("photos") || "[]");
+let trips = JSON.parse(localStorage.getItem("trips") || "[]");
+let currentConversationId = null;
+
+function showTab(id, b) {
+  document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  b.classList.add("active");
 }
-function showTab(id,b){
-document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));
-document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-document.getElementById(id).classList.add("active");
-b.classList.add("active");
+
+async function signUp() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const { error } = await supabase.auth.signUp({ email, password });
+  alert(error ? error.message : "Account created. Now login.");
 }
-function render(){
-document.getElementById("msgs").innerHTML=msgs.map(x=>`<div class="message"><b>${x.n}</b><br>${x.m}</div>`).join("");
-document.getElementById("gallery").innerHTML=photos.map(x=>`<div><p>${x.c}</p><img src="${x.i}"></div><hr>`).join("");
-document.getElementById("triplist").innerHTML=trips.map(x=>`<div><b>${x.d} - ${x.p}</b><p>${x.t}</p></div><hr>`).join("");
+
+async function login() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return alert(error.message);
+
+  alert("Logged in!");
+  await setupChat();
+  await loadMessages();
 }
-function addMsg(){
-msgs.unshift({n:name.value,m:msg.value});
-save();render();msg.value="";
+
+async function logout() {
+  await supabase.auth.signOut();
+  alert("Logged out");
 }
-function addPhoto(){
-let f=photo.files[0];
-if(!f)return;
-let r=new FileReader();
-r.onload=e=>{photos.unshift({c:caption.value,i:e.target.result});save();render();caption.value="";photo.value="";}
-r.readAsDataURL(f);
+
+async function setupChat() {
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData.user;
+  if (!user) return;
+
+  let { data: conversations } = await supabase
+    .from("conversations")
+    .select("*")
+    .eq("title", "Public Newfoundland Chat")
+    .limit(1);
+
+  if (!conversations || conversations.length === 0) {
+    const { data: newConversation, error } = await supabase
+      .from("conversations")
+      .insert({
+        title: "Public Newfoundland Chat",
+        created_by: user.id
+      })
+      .select()
+      .single();
+
+    if (error) return alert(error.message);
+
+    currentConversationId = newConversation.id;
+  } else {
+    currentConversationId = conversations[0].id;
+  }
+
+  await supabase
+    .from("conversation_members")
+    .upsert({
+      conversation_id: currentConversationId,
+      user_id: user.id
+    });
 }
-function addTrip(){
-trips.push({d:day.value,p:place.value,t:plan.value});
-save();render();
-day.value="";place.value="";plan.value="";
+
+async function addMsg() {
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData.user;
+
+  if (!user) return alert("Please login first.");
+
+  if (!currentConversationId) {
+    await setupChat();
+  }
+
+  const messageText = document.getElementById("msg").value;
+  const fileInput = document.getElementById("messagePhoto");
+  const file = fileInput ? fileInput.files[0] : null;
+
+  let photoUrl = null;
+
+  if (file) {
+    const fileName = `${user.id}/${Date.now()}-${file.name}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("message-photos")
+      .upload(fileName, file);
+
+    if (uploadError) return alert(uploadError.message);
+
+    const { data } = supabase.storage
+      .from("message-photos")
+      .getPublicUrl(fileName);
+
+    photoUrl = data.publicUrl;
+  }
+
+  const { error } = await supabase.from("messages").insert({
+    conversation_id: currentConversationId,
+    sender_id: user.id,
+    message: messageText,
+    photo_url: photoUrl
+  });
+
+  if (error) return alert(error.message);
+
+  document.getElementById("msg").value = "";
+  if (fileInput) fileInput.value = "";
+
+  await loadMessages();
 }
-render();
+
+async function loadMessages() {
+  if (!currentConversationId) return;
+
+  const { data, error } = await supabase
+    .from("messages")
+    .select("*")
+    .eq("conversation_id", currentConversationId)
+    .order("created_at", { ascending: false });
+
+  if (error) return alert(error.message);
+
+  document.getElementById("msgs").innerHTML = data.map(x => `
+    <div class="message">
+      <p>${x.message || ""}</p>
+      ${x.photo_url ? `<img src="${x.photo_url}" style="max-width:100%;border-radius:12px;">` : ""}
+      <small>${new Date(x.created_at).toLocaleString()}</small>
+    </div>
+  `).join("");
+}
+
+function addPhoto() {
+  let f = photo.files[0];
+  if (!f) return;
+
+  let r = new FileReader();
+  r.onload = e => {
+    photos.unshift({ c: caption.value, i: e.target.result });
+    localStorage.setItem("photos", JSON.stringify(photos));
+    renderLocal();
+    caption.value = "";
+    photo.value = "";
+  };
+  r.readAsDataURL(f);
+}
+
+function addTrip() {
+  trips.push({ d: day.value, p: place.value, t: plan.value });
+  localStorage.setItem("trips", JSON.stringify(trips));
+  renderLocal();
+  day.value = "";
+  place.value = "";
+  plan.value = "";
+}
+
+function renderLocal() {
+  document.getElementById("gallery").innerHTML = photos.map(x =>
+    `<div><p>${x.c}</p><img src="${x.i}"></div><hr>`
+  ).join("");
+
+  document.getElementById("triplist").innerHTML = trips.map(x =>
+    `<div><b>${x.d} - ${x.p}</b><p>${x.t}</p></div><hr>`
+  ).join("");
+}
+
+supabase
+  .channel("live-public-chat")
+  .on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "messages" },
+    loadMessages
+  )
+  .subscribe();
+
+renderLocal();
+setupChat().then(loadMessages);
 </script>
 </body>
 </html>
